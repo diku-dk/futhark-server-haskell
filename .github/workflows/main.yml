@@ -1,0 +1,17 @@
+on: [push]
+name: build
+jobs:
+  runhaskell:
+    name: cabal test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v1
+      - uses: actions/cache@v2
+        name: Caching
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ runner.os }}
+      - run: cabal test
