@@ -24,6 +24,8 @@ module Futhark.Server
     VarName,
     TypeName,
     EntryName,
+    InputType (..),
+    OutputType (..),
     cmdRestore,
     cmdStore,
     cmdCall,
@@ -218,6 +220,30 @@ type TypeName = Text
 -- | The name of an entry point.
 type EntryName = Text
 
+-- | The type of an input of an entry point.  If 'inputConsumed', then
+-- the value passed in a 'cmdCall' must not be used again (nor any of
+-- its aliases).
+data InputType = InputType
+  { inputConsumed :: Bool,
+    inputType :: TypeName
+  }
+
+-- | The type of an output of an entry point.  If 'outputUnique', then
+-- the value returned does not alias any of the inputs.  See the
+-- Futhark language manual itself for more details - the implications
+-- are quite subtle (but you can ignore them unless you manually use
+-- type annotations to make some entry point parameters unique).
+data OutputType = OutputType
+  { outputUnique :: Bool,
+    outputType :: TypeName
+  }
+
+inOutType :: (Bool -> TypeName -> a) -> Text -> a
+inOutType f t =
+  case T.uncons t of
+    Just ('*', t') -> f True t'
+    _ -> f False t
+
 helpCmd :: Server -> [Text] -> IO (Maybe CmdFailure)
 helpCmd s cmd =
   either Just (const Nothing) <$> sendCommand s cmd
@@ -245,15 +271,15 @@ cmdFree s vs = helpCmd s $ "free" : vs
 cmdRename :: Server -> VarName -> VarName -> IO (Maybe CmdFailure)
 cmdRename s oldname newname = helpCmd s ["rename", oldname, newname]
 
--- | @inputs entryname@
-cmdInputs :: Server -> EntryName -> IO (Either CmdFailure [TypeName])
+-- | @inputs entryname@, with uniqueness represented as True.
+cmdInputs :: Server -> EntryName -> IO (Either CmdFailure [InputType])
 cmdInputs s entry =
-  sendCommand s ["inputs", entry]
+  fmap (map (inOutType InputType)) <$> sendCommand s ["inputs", entry]
 
--- | @outputs entryname@
-cmdOutputs :: Server -> EntryName -> IO (Either CmdFailure [TypeName])
+-- | @outputs entryname@, with uniqueness represented as True.
+cmdOutputs :: Server -> EntryName -> IO (Either CmdFailure [OutputType])
 cmdOutputs s entry =
-  sendCommand s ["outputs", entry]
+  fmap (map (inOutType OutputType)) <$> sendCommand s ["outputs", entry]
 
 -- | @clear@
 cmdClear :: Server -> IO (Maybe CmdFailure)
