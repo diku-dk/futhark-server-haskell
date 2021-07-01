@@ -14,4 +14,4 @@ jobs:
             ~/.cabal/store
             dist-newstyle
           key: ${{ runner.os }}
-      - run: cabal test
+      - run: cabal build
