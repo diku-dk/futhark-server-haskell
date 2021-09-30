@@ -12,6 +12,10 @@
 -- 'CmdFailure'.  However, certain errors (such as if the server
 -- process terminates unexpectedly, or temporary files cannot be
 -- created) will result in an IO exception.
+--
+-- Many of the functions here are documented only as the server
+-- protocol command they correspond to.  See the protocol
+-- documentation for details.
 module Futhark.Server
   ( -- * Server creation
     Server,
@@ -35,6 +39,9 @@ module Futhark.Server
     cmdOutputs,
     cmdClear,
     cmdReport,
+    cmdPauseProfiling,
+    cmdUnpauseProfiling,
+    cmdSetTuningParam,
 
     -- * Utility
     cmdMaybe,
@@ -288,6 +295,18 @@ cmdClear s = helpCmd s ["clear"]
 -- | @report@
 cmdReport :: Server -> IO (Either CmdFailure [T.Text])
 cmdReport s = sendCommand s ["report"]
+
+-- | @pause_profiling@
+cmdPauseProfiling :: Server -> IO (Maybe CmdFailure)
+cmdPauseProfiling s = helpCmd s ["pause_profiling"]
+
+-- | @unpause_profiling@
+cmdUnpauseProfiling :: Server -> IO (Maybe CmdFailure)
+cmdUnpauseProfiling s = helpCmd s ["unpause_profiling"]
+
+-- | @set_tuning_param param value@
+cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [T.Text])
+cmdSetTuningParam s param value = sendCommand s ["set_tuning_param", param, value]
 
 -- | Turn a 'Maybe'-producing command into a monadic action.
 cmdMaybe :: (MonadError T.Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()

@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.1.1.0 -- 2021-09-30
+
+* Added `cmdPauseProfiling`, `cmdUnpauseProfiling`, `cmdSetTuningParam`.
+
 ## 1.1.0.0 -- 2021-07-01
 
 * `cmdInputs` and `cmdOutputs` now return `InputType` and `OutputType`
