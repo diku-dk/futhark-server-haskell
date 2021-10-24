@@ -1,5 +1,10 @@
 # Revision history for futhark-server
 
+## 1.1.2.0 -- 2021-10-24
+
+* `stopServer` (and hence `withServer`) now throw an exception if the
+  process fails.
+
 ## 1.1.1.0 -- 2021-09-30
 
 * Added `cmdPauseProfiling`, `cmdUnpauseProfiling`, `cmdSetTuningParam`.

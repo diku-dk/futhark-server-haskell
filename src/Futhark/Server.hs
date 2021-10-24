@@ -100,7 +100,8 @@ newServerCfg prog opts =
 -- | Start up a server.  Make sure that 'stopServer' is eventually
 -- called on the server.  If this does not happen, then temporary
 -- files may be left on the file system.  You almost certainly wish to
--- use 'bracket' or similar to avoid this.
+-- use 'bracket' or similar to avoid this.  Calls 'error' if startup
+-- fails.
 startServer :: ServerCfg -> IO Server
 startServer (ServerCfg prog options debug) = do
   tmpdir <- getCanonicalTemporaryDirectory
@@ -141,12 +142,18 @@ startServer (ServerCfg prog options debug) = do
           ++ "\nStderr:\n"
           ++ stderr_s
 
--- | Shut down a server.  It may not be used again.
+-- | Shut down a server.  It may not be used again.  Calls 'error' if
+-- the server process terminates with a failing exit code
+-- (i.e. anything but 'ExitSuccess').
 stopServer :: Server -> IO ()
-stopServer s = do
+stopServer s = flip finally (removeFile (serverErrLog s)) $ do
   hClose $ serverStdin s
-  void $ P.waitForProcess $ serverProc s
-  removeFile $ serverErrLog s
+  code <- P.waitForProcess $ serverProc s
+  case code of
+    ExitSuccess -> pure ()
+    ExitFailure _ -> do
+      stderr_s <- readFile $ serverErrLog s
+      error stderr_s
 
 -- | Start a server, execute an action, then shut down the server.
 -- The 'Server' may not be returned from the action.
