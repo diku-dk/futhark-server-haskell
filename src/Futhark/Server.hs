@@ -172,7 +172,7 @@ responseLines s = do
     _ -> (l :) <$> responseLines s
 
 -- | The command failed, and this is why.  The first 'Text' is any
--- output before the failure indincator, and the second Text is the
+-- output before the failure indicator, and the second Text is the
 -- output after the indicator.
 data CmdFailure = CmdFailure {failureLog :: [Text], failureMsg :: [Text]}
   deriving (Eq, Ord, Show)
