@@ -1,5 +1,10 @@
 # Revision history for futhark-server
 
+## 1.1.2.1 -- 2022-02-03
+
+* `withServer` no longer hides a previous exception if an exception
+  occurs during `stopServer`.
+
 ## 1.1.2.0 -- 2021-10-24
 
 * `stopServer` (and hence `withServer`) now throw an exception if the

@@ -158,7 +158,19 @@ stopServer s = flip finally (removeFile (serverErrLog s)) $ do
 -- | Start a server, execute an action, then shut down the server.
 -- The 'Server' may not be returned from the action.
 withServer :: ServerCfg -> (Server -> IO a) -> IO a
-withServer cfg = bracket (startServer cfg) stopServer
+withServer cfg m = mask $ \restore -> do
+  server <- startServer cfg
+  x <- restore (m server) `catch` mException server
+  stopServer server
+  pure x
+  where
+    mException server e = do
+      -- Anything that goes wrong here is probably less interesting
+      -- than the original exception.
+      stopServer server `catch` stopServerException e
+      throw e
+    stopServerException :: SomeException -> SomeException -> IO a
+    stopServerException e _ = throw e
 
 -- Read lines of response until the next %%% OK (which is what
 -- indicates that the server is ready for new instructions).
