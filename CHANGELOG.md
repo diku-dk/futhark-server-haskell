@@ -1,5 +1,11 @@
 # Revision history for futhark-server
 
+## 1.2.0.0 -- 2022-05-14
+
+* `ServerCfg` no longer has any type class instances.
+
+* `ServerCfg` now has a `cfgOnLine` field.
+
 ## 1.1.2.1 -- 2022-02-03
 
 * `withServer` no longer hides a previous exception if an exception

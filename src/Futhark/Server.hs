@@ -24,6 +24,7 @@ module Futhark.Server
     withServer,
 
     -- * Commands
+    Cmd,
     CmdFailure (..),
     VarName,
     TypeName,
@@ -66,12 +67,16 @@ import System.IO hiding (stdin, stdout)
 import System.IO.Temp (getCanonicalTemporaryDirectory)
 import qualified System.Process as P
 
+-- | The name of a command.
+type Cmd = Text
+
 -- | A handle to a running server.
 data Server = Server
   { serverStdin :: Handle,
     serverStdout :: Handle,
     serverErrLog :: FilePath,
     serverProc :: P.ProcessHandle,
+    serverOnLine :: Cmd -> T.Text -> IO (),
     serverDebug :: Bool
   }
 
@@ -84,9 +89,15 @@ data ServerCfg = ServerCfg
     -- server executable.
     cfgProgOpts :: [String],
     -- | If true, print a running log of server communication to stderr.
-    cfgDebug :: Bool
+    cfgDebug :: Bool,
+    -- | A function that is invoked on every line of input sent by the
+    -- server, except the @%%% OK@ and @%%% FAILURE@ prompts.  This
+    -- can be used to e.g. print or gather logging messages as they
+    -- arrive, instead of waiting for the command to finish.  The name
+    -- of the command leading to the message is also provided.  The
+    -- default function does nothing.
+    cfgOnLine :: Cmd -> T.Text -> IO ()
   }
-  deriving (Eq, Ord, Show)
 
 -- | Create a server config with the given 'cfgProg' and 'cfgProgOpts'.
 newServerCfg :: FilePath -> [String] -> ServerCfg
@@ -94,7 +105,8 @@ newServerCfg prog opts =
   ServerCfg
     { cfgProg = prog,
       cfgProgOpts = opts,
-      cfgDebug = False
+      cfgDebug = False,
+      cfgOnLine = \_ _ -> pure ()
     }
 
 -- | Start up a server.  Make sure that 'stopServer' is eventually
@@ -103,7 +115,7 @@ newServerCfg prog opts =
 -- use 'bracket' or similar to avoid this.  Calls 'error' if startup
 -- fails.
 startServer :: ServerCfg -> IO Server
-startServer (ServerCfg prog options debug) = do
+startServer (ServerCfg prog options debug on_line_f) = do
   tmpdir <- getCanonicalTemporaryDirectory
   (err_log_f, err_log_h) <- openTempFile tmpdir "futhark-server-stderr.log"
   (Just stdin, Just stdout, Nothing, phandle) <-
@@ -126,9 +138,10 @@ startServer (ServerCfg prog options debug) = do
                 serverStdout = stdout,
                 serverProc = phandle,
                 serverDebug = debug,
-                serverErrLog = err_log_f
+                serverErrLog = err_log_f,
+                serverOnLine = on_line_f
               }
-      void (responseLines server) `catch` onStartupError server
+      void (responseLines "startup" server) `catch` onStartupError server
       pure server
   where
     onStartupError :: Server -> IOError -> IO a
@@ -174,14 +187,16 @@ withServer cfg m = mask $ \restore -> do
 
 -- Read lines of response until the next %%% OK (which is what
 -- indicates that the server is ready for new instructions).
-responseLines :: Server -> IO [Text]
-responseLines s = do
+responseLines :: Cmd -> Server -> IO [Text]
+responseLines cmd s = do
   l <- T.hGetLine $ serverStdout s
   when (serverDebug s) $
     T.hPutStrLn stderr $ "<<< " <> l
   case l of
     "%%% OK" -> pure []
-    _ -> (l :) <$> responseLines s
+    _ -> do
+      serverOnLine s cmd l
+      (l :) <$> responseLines cmd s
 
 -- | The command failed, and this is why.  The first 'Text' is any
 -- output before the failure indicator, and the second Text is the
@@ -203,23 +218,23 @@ checkForFailure (l : ls) =
 quoteWord :: Text -> Text
 quoteWord t
   | Just _ <- T.find (== ' ') t =
-    "\"" <> t <> "\""
+      "\"" <> t <> "\""
   | otherwise = t
 
 -- | Send an arbitrary command to the server.  This is only useful
 -- when the server protocol has been extended without this module
 -- having been similarly extended.  Be careful not to send invalid
 -- commands.
-sendCommand :: Server -> [Text] -> IO (Either CmdFailure [Text])
-sendCommand s command = do
-  let command' = T.unwords $ map quoteWord command
+sendCommand :: Server -> Cmd -> [Text] -> IO (Either CmdFailure [Text])
+sendCommand s cmd args = do
+  let cmd_and_args' = T.unwords $ map quoteWord $ cmd : args
 
   when (serverDebug s) $
-    T.hPutStrLn stderr $ ">>> " <> command'
+    T.hPutStrLn stderr $ ">>> " <> cmd_and_args'
 
-  T.hPutStrLn (serverStdin s) command'
+  T.hPutStrLn (serverStdin s) cmd_and_args'
   hFlush $ serverStdin s
-  checkForFailure <$> responseLines s `catch` onError
+  checkForFailure <$> responseLines cmd s `catch` onError
   where
     onError :: IOError -> IO a
     onError e = do
@@ -231,7 +246,7 @@ sendCommand s command = do
               _ -> mempty
       stderr_s <- readFile $ serverErrLog s
       error $
-        "After sending command " ++ show command ++ " to server process:"
+        "After sending command " ++ show cmd ++ " to server process:"
           ++ show e
           ++ code_msg
           ++ "\nServer stderr:\n"
@@ -270,62 +285,62 @@ inOutType f t =
     Just ('*', t') -> f True t'
     _ -> f False t
 
-helpCmd :: Server -> [Text] -> IO (Maybe CmdFailure)
-helpCmd s cmd =
-  either Just (const Nothing) <$> sendCommand s cmd
+helpCmd :: Server -> Cmd -> [Text] -> IO (Maybe CmdFailure)
+helpCmd s cmd args =
+  either Just (const Nothing) <$> sendCommand s cmd args
 
 -- | @restore filename var0 type0 var1 type1...@.
 cmdRestore :: Server -> FilePath -> [(VarName, TypeName)] -> IO (Maybe CmdFailure)
-cmdRestore s fname vars = helpCmd s $ "restore" : T.pack fname : concatMap f vars
+cmdRestore s fname vars = helpCmd s "restore" $ T.pack fname : concatMap f vars
   where
     f (v, t) = [v, t]
 
 -- | @store filename vars...@.
 cmdStore :: Server -> FilePath -> [VarName] -> IO (Maybe CmdFailure)
-cmdStore s fname vars = helpCmd s $ "store" : T.pack fname : vars
+cmdStore s fname vars = helpCmd s "store" $ T.pack fname : vars
 
 -- | @call entrypoint outs... ins...@.
 cmdCall :: Server -> EntryName -> [VarName] -> [VarName] -> IO (Either CmdFailure [T.Text])
 cmdCall s entry outs ins =
-  sendCommand s $ "call" : entry : outs ++ ins
+  sendCommand s "call" $ entry : outs ++ ins
 
 -- | @free vars...@.
 cmdFree :: Server -> [VarName] -> IO (Maybe CmdFailure)
-cmdFree s vs = helpCmd s $ "free" : vs
+cmdFree s = helpCmd s "free"
 
 -- | @rename oldname newname@.
 cmdRename :: Server -> VarName -> VarName -> IO (Maybe CmdFailure)
-cmdRename s oldname newname = helpCmd s ["rename", oldname, newname]
+cmdRename s oldname newname = helpCmd s "rename" [oldname, newname]
 
 -- | @inputs entryname@, with uniqueness represented as True.
 cmdInputs :: Server -> EntryName -> IO (Either CmdFailure [InputType])
 cmdInputs s entry =
-  fmap (map (inOutType InputType)) <$> sendCommand s ["inputs", entry]
+  fmap (map (inOutType InputType)) <$> sendCommand s "inputs" [entry]
 
 -- | @outputs entryname@, with uniqueness represented as True.
 cmdOutputs :: Server -> EntryName -> IO (Either CmdFailure [OutputType])
 cmdOutputs s entry =
-  fmap (map (inOutType OutputType)) <$> sendCommand s ["outputs", entry]
+  fmap (map (inOutType OutputType)) <$> sendCommand s "outputs" [entry]
 
 -- | @clear@
 cmdClear :: Server -> IO (Maybe CmdFailure)
-cmdClear s = helpCmd s ["clear"]
+cmdClear s = helpCmd s "clear" []
 
 -- | @report@
 cmdReport :: Server -> IO (Either CmdFailure [T.Text])
-cmdReport s = sendCommand s ["report"]
+cmdReport s = sendCommand s "report" []
 
 -- | @pause_profiling@
 cmdPauseProfiling :: Server -> IO (Maybe CmdFailure)
-cmdPauseProfiling s = helpCmd s ["pause_profiling"]
+cmdPauseProfiling s = helpCmd s "pause_profiling" []
 
 -- | @unpause_profiling@
 cmdUnpauseProfiling :: Server -> IO (Maybe CmdFailure)
-cmdUnpauseProfiling s = helpCmd s ["unpause_profiling"]
+cmdUnpauseProfiling s = helpCmd s "unpause_profiling" []
 
 -- | @set_tuning_param param value@
 cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [T.Text])
-cmdSetTuningParam s param value = sendCommand s ["set_tuning_param", param, value]
+cmdSetTuningParam s param value = sendCommand s "set_tuning_param" [param, value]
 
 -- | Turn a 'Maybe'-producing command into a monadic action.
 cmdMaybe :: (MonadError T.Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()
