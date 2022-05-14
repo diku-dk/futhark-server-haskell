@@ -76,7 +76,7 @@ data Server = Server
     serverStdout :: Handle,
     serverErrLog :: FilePath,
     serverProc :: P.ProcessHandle,
-    serverOnLine :: Cmd -> T.Text -> IO (),
+    serverOnLine :: Cmd -> Text -> IO (),
     serverDebug :: Bool
   }
 
@@ -96,7 +96,7 @@ data ServerCfg = ServerCfg
     -- arrive, instead of waiting for the command to finish.  The name
     -- of the command leading to the message is also provided.  The
     -- default function does nothing.
-    cfgOnLine :: Cmd -> T.Text -> IO ()
+    cfgOnLine :: Cmd -> Text -> IO ()
   }
 
 -- | Create a server config with the given 'cfgProg' and 'cfgProgOpts'.
@@ -300,7 +300,7 @@ cmdStore :: Server -> FilePath -> [VarName] -> IO (Maybe CmdFailure)
 cmdStore s fname vars = helpCmd s "store" $ T.pack fname : vars
 
 -- | @call entrypoint outs... ins...@.
-cmdCall :: Server -> EntryName -> [VarName] -> [VarName] -> IO (Either CmdFailure [T.Text])
+cmdCall :: Server -> EntryName -> [VarName] -> [VarName] -> IO (Either CmdFailure [Text])
 cmdCall s entry outs ins =
   sendCommand s "call" $ entry : outs ++ ins
 
@@ -327,7 +327,7 @@ cmdClear :: Server -> IO (Maybe CmdFailure)
 cmdClear s = helpCmd s "clear" []
 
 -- | @report@
-cmdReport :: Server -> IO (Either CmdFailure [T.Text])
+cmdReport :: Server -> IO (Either CmdFailure [Text])
 cmdReport s = sendCommand s "report" []
 
 -- | @pause_profiling@
@@ -339,13 +339,13 @@ cmdUnpauseProfiling :: Server -> IO (Maybe CmdFailure)
 cmdUnpauseProfiling s = helpCmd s "unpause_profiling" []
 
 -- | @set_tuning_param param value@
-cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [T.Text])
+cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [Text])
 cmdSetTuningParam s param value = sendCommand s "set_tuning_param" [param, value]
 
 -- | Turn a 'Maybe'-producing command into a monadic action.
-cmdMaybe :: (MonadError T.Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()
+cmdMaybe :: (MonadError Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()
 cmdMaybe = maybe (pure ()) (throwError . T.unlines . failureMsg) <=< liftIO
 
 -- | Turn an 'Either'-producing command into a monadic action.
-cmdEither :: (MonadError T.Text m, MonadIO m) => IO (Either CmdFailure a) -> m a
+cmdEither :: (MonadError Text m, MonadIO m) => IO (Either CmdFailure a) -> m a
 cmdEither = either (throwError . T.unlines . failureMsg) pure <=< liftIO
