@@ -31,6 +31,8 @@ module Futhark.Server
     EntryName,
     InputType (..),
     OutputType (..),
+
+    -- ** Main commands
     cmdRestore,
     cmdStore,
     cmdCall,
@@ -39,6 +41,17 @@ module Futhark.Server
     cmdInputs,
     cmdOutputs,
     cmdClear,
+
+    -- ** Interrogation
+    cmdTypes,
+    cmdEntryPoints,
+
+    -- ** Records
+    cmdNew,
+    cmdProject,
+    cmdFields,
+
+    -- ** Auxiliary
     cmdReport,
     cmdPauseProfiling,
     cmdUnpauseProfiling,
@@ -150,7 +163,9 @@ startServer (ServerCfg prog options debug on_line_f) = do
       stderr_s <- readFile $ serverErrLog s
       removeFile $ serverErrLog s
       error $
-        "Command failed with " ++ show code ++ ":\n"
+        "Command failed with "
+          ++ show code
+          ++ ":\n"
           ++ unwords (prog : options)
           ++ "\nStderr:\n"
           ++ stderr_s
@@ -191,7 +206,8 @@ responseLines :: Cmd -> Server -> IO [Text]
 responseLines cmd s = do
   l <- T.hGetLine $ serverStdout s
   when (serverDebug s) $
-    T.hPutStrLn stderr $ "<<< " <> l
+    T.hPutStrLn stderr $
+      "<<< " <> l
   case l of
     "%%% OK" -> pure []
     _ -> do
@@ -230,7 +246,8 @@ sendCommand s cmd args = do
   let cmd_and_args' = T.unwords $ map quoteWord $ cmd : args
 
   when (serverDebug s) $
-    T.hPutStrLn stderr $ ">>> " <> cmd_and_args'
+    T.hPutStrLn stderr $
+      ">>> " <> cmd_and_args'
 
   T.hPutStrLn (serverStdin s) cmd_and_args'
   hFlush $ serverStdin s
@@ -246,7 +263,9 @@ sendCommand s cmd args = do
               _ -> mempty
       stderr_s <- readFile $ serverErrLog s
       error $
-        "After sending command " ++ show cmd ++ " to server process:"
+        "After sending command "
+          ++ show cmd
+          ++ " to server process:"
           ++ show e
           ++ code_msg
           ++ "\nServer stderr:\n"
@@ -341,6 +360,26 @@ cmdUnpauseProfiling s = helpCmd s "unpause_profiling" []
 -- | @set_tuning_param param value@
 cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [Text])
 cmdSetTuningParam s param value = sendCommand s "set_tuning_param" [param, value]
+
+-- | @types@
+cmdTypes :: Server -> IO (Either CmdFailure [Text])
+cmdTypes s = sendCommand s "types" []
+
+-- | @entry_points@
+cmdEntryPoints :: Server -> IO (Maybe CmdFailure)
+cmdEntryPoints s = helpCmd s "entry_points" []
+
+-- | @fields type@
+cmdFields :: Server -> Text -> IO (Either CmdFailure [Text])
+cmdFields s t = sendCommand s "fields" [t]
+
+-- | @new var0 type var1...@
+cmdNew :: Server -> Text -> Text -> [Text] -> IO (Maybe CmdFailure)
+cmdNew s var0 t vars = helpCmd s "new" $ var0 : t : vars
+
+-- | @project to from field@
+cmdProject :: Server -> Text -> Text -> Text -> IO (Maybe CmdFailure)
+cmdProject s to from field = helpCmd s "project" [to, from, field]
 
 -- | Turn a 'Maybe'-producing command into a monadic action.
 cmdMaybe :: (MonadError Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()

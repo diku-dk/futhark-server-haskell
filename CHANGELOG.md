@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.2.1.0 -- 2022-07-01
+
+* Added `cmdFields`, `cmdNew`, `cmdProject`, `cmdTypes`, and `cmdEntryPoints`.
+
 ## 1.2.0.0 -- 2022-05-14
 
 * `ServerCfg` no longer has any type class instances.
