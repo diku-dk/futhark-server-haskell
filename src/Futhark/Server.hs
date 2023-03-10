@@ -56,6 +56,8 @@ module Futhark.Server
     cmdPauseProfiling,
     cmdUnpauseProfiling,
     cmdSetTuningParam,
+    cmdTuningParams,
+    cmdTuningParamClass,
 
     -- * Utility
     cmdMaybe,
@@ -361,13 +363,21 @@ cmdUnpauseProfiling s = helpCmd s "unpause_profiling" []
 cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [Text])
 cmdSetTuningParam s param value = sendCommand s "set_tuning_param" [param, value]
 
+-- | @tuning_params@
+cmdTuningParams :: Server -> Text -> IO (Either CmdFailure [Text])
+cmdTuningParams s entry = sendCommand s "tuning_params" [entry]
+
+-- | @tuning_param_class param@
+cmdTuningParamClass :: Server -> Text -> IO (Either CmdFailure Text)
+cmdTuningParamClass s param = fmap head <$> sendCommand s "tuning_param_class" [param]
+
 -- | @types@
 cmdTypes :: Server -> IO (Either CmdFailure [Text])
 cmdTypes s = sendCommand s "types" []
 
 -- | @entry_points@
-cmdEntryPoints :: Server -> IO (Maybe CmdFailure)
-cmdEntryPoints s = helpCmd s "entry_points" []
+cmdEntryPoints :: Server -> IO (Either CmdFailure [Text])
+cmdEntryPoints s = sendCommand s "entry_points" []
 
 -- | @fields type@
 cmdFields :: Server -> Text -> IO (Either CmdFailure [Text])

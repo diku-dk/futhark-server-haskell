@@ -1,5 +1,11 @@
 # Revision history for futhark-server
 
+## 1.2.2.0 -- 2023-03-10
+
+* Added `cmdTuningParams`.
+
+* Fixed type of `cmdEntryPoints`.
+
 ## 1.2.1.0 -- 2022-07-01
 
 * Added `cmdFields`, `cmdNew`, `cmdProject`, `cmdTypes`, and `cmdEntryPoints`.
