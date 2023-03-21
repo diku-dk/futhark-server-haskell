@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.2.2.1 -- 2023-03-21
+
+* Support GHC 9.6.
+
 ## 1.2.2.0 -- 2023-03-10
 
 * Added `cmdTuningParams`.
