@@ -72,7 +72,7 @@ where
 
 import Control.Exception
 import Control.Monad
-import Control.Monad.Except
+import Control.Monad.Except (MonadError (..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
