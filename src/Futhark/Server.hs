@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData #-}
 
 -- | Haskell code for interacting with a Futhark server program.  This
 -- module presents a low-level interface.  See
