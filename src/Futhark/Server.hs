@@ -148,7 +148,9 @@ startServer (ServerCfg prog options debug on_line_f) = do
   case code of
     Just (ExitFailure e) ->
       error $ "Cannot start " ++ prog ++ ": error " ++ show e
-    _ -> do
+    Just ExitSuccess ->
+      error $ "Cannot start " ++ prog ++ ": terminated immediately, but reported success."
+    Nothing -> do
       let server =
             Server
               { serverStdin = stdin,
@@ -264,7 +266,8 @@ sendCommand s cmd args = do
             case code of
               Just (ExitFailure x) ->
                 "\nServer process exited unexpectedly with exit code: " ++ show x
-              _ -> mempty
+              Just ExitSuccess -> mempty
+              Nothing -> mempty
       stderr_s <- readFile $ serverErrLog s
       error $
         "After sending command "
@@ -306,7 +309,8 @@ inOutType :: (Bool -> TypeName -> a) -> Text -> a
 inOutType f t =
   case T.uncons t of
     Just ('*', t') -> f True t'
-    _ -> f False t
+    Just _ -> f False t
+    Nothing -> f False t
 
 helpCmd :: Server -> Cmd -> [Text] -> IO (Maybe CmdFailure)
 helpCmd s cmd args =
