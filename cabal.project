@@ -1,0 +1,4 @@
+packages: futhark-server.cabal
+
+package futhark-server
+  ghc-options: -j -fwrite-ide-info -hiedir=.hie
