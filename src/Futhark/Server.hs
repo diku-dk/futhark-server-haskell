@@ -107,7 +107,7 @@ data ServerCfg = ServerCfg
     cfgProgOpts :: [String],
     -- | If true, print a running log of server communication to stderr.
     cfgDebug :: Bool,
-    -- | A function that is invoked on every line of input sent by the
+    -- | A function that is invoked on every line of output sent by the
     -- server, except the @%%% OK@ and @%%% FAILURE@ prompts.  This
     -- can be used to e.g. print or gather logging messages as they
     -- arrive, instead of waiting for the command to finish.  The name
