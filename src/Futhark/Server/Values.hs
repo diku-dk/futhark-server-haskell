@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Convenience functions builds on top of "Futhark.Data" and
+-- | Convenience functions built on top of "Futhark.Data" and
 -- "Futhark.Server" for passing non-opaque values in and out of a
 -- server instance.
 module Futhark.Server.Values (getValue, putValue) where
