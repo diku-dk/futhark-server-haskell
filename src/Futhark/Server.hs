@@ -67,6 +67,7 @@ module Futhark.Server
     -- * Raw
     startServer,
     stopServer,
+    abortServer,
     sendCommand,
   )
 where
@@ -188,6 +189,12 @@ stopServer s = flip finally (removeFile (serverErrLog s)) $ do
     ExitFailure _ -> do
       stderr_s <- readFile $ serverErrLog s
       error stderr_s
+
+-- | Terminate the server process.  You'll still need to call
+-- 'stopServer' unless used inside 'withServer', which does it for
+-- you.
+abortServer :: Server -> IO ()
+abortServer = P.terminateProcess . serverProc
 
 -- | Start a server, execute an action, then shut down the server.
 -- The 'Server' may not be returned from the action.
