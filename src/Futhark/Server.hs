@@ -186,9 +186,13 @@ stopServer s = flip finally (removeFile (serverErrLog s)) $ do
   code <- P.waitForProcess $ serverProc s
   case code of
     ExitSuccess -> pure ()
-    ExitFailure _ -> do
+    ExitFailure x -> do
       stderr_s <- readFile $ serverErrLog s
-      error stderr_s
+      error $
+        "Server terminated with nonzero exit code"
+          <> show x
+          <> "and stderr:\n"
+          <> stderr_s
 
 -- | Terminate the server process.  You'll still need to call
 -- 'stopServer' unless used inside 'withServer', which does it for

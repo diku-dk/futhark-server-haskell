@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## Next
+
+* Report exit code when server terminates with nonzero exit code.
+
 ## 1.2.3.0 -- 2024-10-25
 
 * Add `abortServer`.
