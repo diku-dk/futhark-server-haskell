@@ -189,9 +189,9 @@ stopServer s = flip finally (removeFile (serverErrLog s)) $ do
     ExitFailure x -> do
       stderr_s <- readFile $ serverErrLog s
       error $
-        "Server terminated with nonzero exit code"
+        "Server terminated with nonzero exit code "
           <> show x
-          <> "and stderr:\n"
+          <> " and stderr:\n"
           <> stderr_s
 
 -- | Terminate the server process.  You'll still need to call
