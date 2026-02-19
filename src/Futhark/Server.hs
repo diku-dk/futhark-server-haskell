@@ -386,7 +386,7 @@ cmdTuningParams s entry = sendCommand s "tuning_params" [entry]
 
 -- | @tuning_param_class param@
 cmdTuningParamClass :: Server -> Text -> IO (Either CmdFailure Text)
-cmdTuningParamClass s param = fmap head <$> sendCommand s "tuning_param_class" [param]
+cmdTuningParamClass s param = fmap mconcat <$> sendCommand s "tuning_param_class" [param]
 
 -- | @types@
 cmdTypes :: Server -> IO (Either CmdFailure [Text])
