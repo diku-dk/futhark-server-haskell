@@ -52,6 +52,10 @@ module Futhark.Server
     cmdProject,
     cmdFields,
 
+    -- * Arrays
+    cmdShape,
+    cmdIndex,
+
     -- ** Auxiliary
     cmdReport,
     cmdPauseProfiling,
@@ -407,6 +411,15 @@ cmdNew s var0 t vars = helpCmd s "new" $ var0 : t : vars
 -- | @project to from field@
 cmdProject :: Server -> Text -> Text -> Text -> IO (Maybe CmdFailure)
 cmdProject s to from field = helpCmd s "project" [to, from, field]
+
+-- | @shape v@
+cmdShape :: Server -> VarName -> IO (Either CmdFailure [Int])
+cmdShape s v = fmap (map (read . T.unpack)) <$> sendCommand s "shape" [v]
+
+-- | @index v0 v1 i0 ... iN-1@
+cmdIndex :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)
+cmdIndex s v0 v1 is =
+  helpCmd s "index" $ [v0, v1] <> map (T.pack . show) is
 
 -- | Turn a 'Maybe'-producing command into a monadic action.
 cmdMaybe :: (MonadError Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()
