@@ -1,8 +1,10 @@
 # Revision history for futhark-server
 
-## Next
+## 1.2.4.0 -- 2026-02-19
 
 * Report exit code when server terminates with nonzero exit code.
+
+* Support for `index` and `shape` commands.
 
 ## 1.2.3.0 -- 2024-10-25
 
