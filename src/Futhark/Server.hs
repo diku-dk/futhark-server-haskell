@@ -17,6 +17,9 @@
 -- Many of the functions here are documented only as the server
 -- protocol command they correspond to.  See the protocol
 -- documentation for details.
+--
+-- Type aliases are added for readability, but many of the commands simply
+-- accept and produce 'T.Text's.
 module Futhark.Server
   ( -- * Server creation
     Server,
@@ -30,6 +33,7 @@ module Futhark.Server
     VarName,
     TypeName,
     EntryName,
+    TuningParamName,
     InputType (..),
     OutputType (..),
 
@@ -302,6 +306,9 @@ type TypeName = Text
 -- | The name of an entry point.
 type EntryName = Text
 
+-- | The name of a tuning parameter.
+type TuningParamName = Text
+
 -- | The type of an input of an entry point.  If 'inputConsumed', then
 -- the value passed in a 'cmdCall' must not be used again (nor any of
 -- its aliases).
@@ -381,35 +388,35 @@ cmdUnpauseProfiling :: Server -> IO (Maybe CmdFailure)
 cmdUnpauseProfiling s = helpCmd s "unpause_profiling" []
 
 -- | @set_tuning_param param value@
-cmdSetTuningParam :: Server -> Text -> Text -> IO (Either CmdFailure [Text])
+cmdSetTuningParam :: Server -> TuningParamName -> Text -> IO (Either CmdFailure [Text])
 cmdSetTuningParam s param value = sendCommand s "set_tuning_param" [param, value]
 
--- | @tuning_params@
-cmdTuningParams :: Server -> Text -> IO (Either CmdFailure [Text])
+-- | @tuning_params entry_point@
+cmdTuningParams :: Server -> EntryName -> IO (Either CmdFailure [TuningParamName])
 cmdTuningParams s entry = sendCommand s "tuning_params" [entry]
 
 -- | @tuning_param_class param@
-cmdTuningParamClass :: Server -> Text -> IO (Either CmdFailure Text)
+cmdTuningParamClass :: Server -> TuningParamName -> IO (Either CmdFailure Text)
 cmdTuningParamClass s param = fmap mconcat <$> sendCommand s "tuning_param_class" [param]
 
 -- | @types@
-cmdTypes :: Server -> IO (Either CmdFailure [Text])
+cmdTypes :: Server -> IO (Either CmdFailure [TypeName])
 cmdTypes s = sendCommand s "types" []
 
 -- | @entry_points@
-cmdEntryPoints :: Server -> IO (Either CmdFailure [Text])
+cmdEntryPoints :: Server -> IO (Either CmdFailure [EntryName])
 cmdEntryPoints s = sendCommand s "entry_points" []
 
 -- | @fields type@
-cmdFields :: Server -> Text -> IO (Either CmdFailure [Text])
+cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Text])
 cmdFields s t = sendCommand s "fields" [t]
 
 -- | @new var0 type var1...@
-cmdNew :: Server -> Text -> Text -> [Text] -> IO (Maybe CmdFailure)
+cmdNew :: Server -> VarName -> TypeName -> [VarName] -> IO (Maybe CmdFailure)
 cmdNew s var0 t vars = helpCmd s "new" $ var0 : t : vars
 
 -- | @project to from field@
-cmdProject :: Server -> Text -> Text -> Text -> IO (Maybe CmdFailure)
+cmdProject :: Server -> VarName -> VarName -> Text -> IO (Maybe CmdFailure)
 cmdProject s to from field = helpCmd s "project" [to, from, field]
 
 -- | @shape v@
