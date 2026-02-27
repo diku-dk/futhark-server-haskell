@@ -5,6 +5,8 @@
 * `Futhark.Server.Values.getValue` now detects attempts to retrieve (some)
   non-opaque values instead of silently producing something invalid.
 
+* `cmdSetTuningParam` now has a more precise type.
+
 ## 1.2.4.0 -- 2026-02-19
 
 * Report exit code when server terminates with nonzero exit code.

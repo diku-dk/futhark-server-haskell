@@ -388,8 +388,8 @@ cmdUnpauseProfiling :: Server -> IO (Maybe CmdFailure)
 cmdUnpauseProfiling s = helpCmd s "unpause_profiling" []
 
 -- | @set_tuning_param param value@
-cmdSetTuningParam :: Server -> TuningParamName -> Text -> IO (Either CmdFailure [Text])
-cmdSetTuningParam s param value = sendCommand s "set_tuning_param" [param, value]
+cmdSetTuningParam :: Server -> TuningParamName -> Int -> IO (Maybe CmdFailure)
+cmdSetTuningParam s param value = helpCmd s "set_tuning_param" [param, T.pack (show value)]
 
 -- | @tuning_params entry_point@
 cmdTuningParams :: Server -> EntryName -> IO (Either CmdFailure [TuningParamName])
