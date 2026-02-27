@@ -1,5 +1,10 @@
 # Revision history for futhark-server
 
+## Unreleased
+
+* `Futhark.Server.Values.getValue` now detects attempts to retrieve (some)
+  non-opaque values instead of silently producing something invalid.
+
 ## 1.2.4.0 -- 2026-02-19
 
 * Report exit code when server terminates with nonzero exit code.
