@@ -10,7 +10,7 @@
 -- functions for loading data into a server.
 --
 -- Error messages produced by the server will be returned as a
--- 'CmdFailure'.  However, certain errors (such as if the server
+-- t'CmdFailure'.  However, certain errors (such as if the server
 -- process terminates unexpectedly, or temporary files cannot be
 -- created) will result in an IO exception.
 --
@@ -209,7 +209,7 @@ abortServer :: Server -> IO ()
 abortServer = P.terminateProcess . serverProc
 
 -- | Start a server, execute an action, then shut down the server.
--- The 'Server' may not be returned from the action.
+-- The t'Server' may not be returned from the action.
 withServer :: ServerCfg -> (Server -> IO a) -> IO a
 withServer cfg m = mask $ \restore -> do
   server <- startServer cfg
