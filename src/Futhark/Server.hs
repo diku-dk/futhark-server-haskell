@@ -31,6 +31,7 @@ module Futhark.Server
     -- * Commands
     Cmd,
     CmdFailure (..),
+    Field (..),
     VarName,
     TypeName,
     EntryName,
@@ -105,6 +106,12 @@ instance Exception ServerException
 
 -- | The name of a command.
 type Cmd = Text
+
+-- | A record field
+data Field = Field
+  { fieldName :: Text,
+    fieldType :: TypeName
+  }
 
 -- | A handle to a running server.
 data Server = Server
@@ -419,8 +426,14 @@ cmdEntryPoints :: Server -> IO (Either CmdFailure [EntryName])
 cmdEntryPoints s = sendCommand s "entry_points" []
 
 -- | @fields type@
-cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Text])
-cmdFields s t = sendCommand s "fields" [t]
+cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Field])
+cmdFields s t = fmap (zipWith parseField [1..]) <$> sendCommand s "fields" [t]
+  where
+    parseField :: Int -> Text -> Field
+    parseField l f =
+      case T.words f of
+        (fn : ft) -> Field fn $ T.unwords ft
+        _ -> error $ "Invalid field on line " ++ show l ++ " of `fields` output: \"" ++ T.unpack f ++ "\""
 
 -- | @new var0 type var1...@
 cmdNew :: Server -> VarName -> TypeName -> [VarName] -> IO (Maybe CmdFailure)
