@@ -1,6 +1,6 @@
 # Revision history for futhark-server
 
-## Unreleased
+## 1.3.0.0 -- UNRELEASED
 
 * `Futhark.Server.Values.getValue` now detects attempts to retrieve (some)
   non-opaque values instead of silently producing something invalid.
@@ -8,6 +8,8 @@
 * `cmdSetTuningParam` now has a more precise type.
 
 * Server-related exceptions are now reported with the `ServerException` type.
+
+* `cmdFields` now produces structured information.
 
 ## 1.2.4.0 -- 2026-02-19
 
