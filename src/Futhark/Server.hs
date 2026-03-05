@@ -26,6 +26,7 @@ module Futhark.Server
     ServerCfg (..),
     newServerCfg,
     withServer,
+    ServerException (..),
 
     -- * Commands
     Cmd,
@@ -93,6 +94,15 @@ import System.IO hiding (stdin, stdout)
 import System.IO.Temp (getCanonicalTemporaryDirectory)
 import qualified System.Process as P
 
+-- | An unexpected IO exception describing an error related to interacting with
+-- the server, such as failing to start it, or the server crashing.
+data ServerException
+  = -- | Human-readable error message.
+    ServerException T.Text
+  deriving (Show)
+
+instance Exception ServerException
+
 -- | The name of a command.
 type Cmd = Text
 
@@ -135,11 +145,10 @@ newServerCfg prog opts =
       cfgOnLine = \_ _ -> pure ()
     }
 
--- | Start up a server.  Make sure that 'stopServer' is eventually
--- called on the server.  If this does not happen, then temporary
--- files may be left on the file system.  You almost certainly wish to
--- use 'bracket' or similar to avoid this.  Calls 'error' if startup
--- fails.
+-- | Start up a server. Make sure that 'stopServer' is eventually called on the
+-- server. If this does not happen, then temporary files may be left on the file
+-- system. You almost certainly wish to use 'bracket' or similar to avoid this.
+-- Throws 'ServerException' if startup fails.
 startServer :: ServerCfg -> IO Server
 startServer (ServerCfg prog options debug on_line_f) = do
   tmpdir <- getCanonicalTemporaryDirectory
@@ -156,9 +165,11 @@ startServer (ServerCfg prog options debug on_line_f) = do
   code <- P.getProcessExitCode phandle
   case code of
     Just (ExitFailure e) ->
-      error $ "Cannot start " ++ prog ++ ": error " ++ show e
+      throw . ServerException $
+        "Cannot start " <> T.pack prog <> ": error " <> T.pack (show e)
     Just ExitSuccess ->
-      error $ "Cannot start " ++ prog ++ ": terminated immediately, but reported success."
+      throw . ServerException $
+        "Cannot start " <> T.pack prog <> ": terminated immediately, but reported success."
     Nothing -> do
       let server =
             Server
@@ -175,19 +186,19 @@ startServer (ServerCfg prog options debug on_line_f) = do
     onStartupError :: Server -> IOError -> IO a
     onStartupError s _ = do
       code <- P.waitForProcess $ serverProc s
-      stderr_s <- readFile $ serverErrLog s
+      stderr_s <- T.readFile $ serverErrLog s
       removeFile $ serverErrLog s
-      error $
+      throw . ServerException $
         "Command failed with "
-          ++ show code
-          ++ ":\n"
-          ++ unwords (prog : options)
-          ++ "\nStderr:\n"
-          ++ stderr_s
+          <> T.pack (show code)
+          <> ":\n"
+          <> T.pack (unwords (prog : options))
+          <> "\nStderr:\n"
+          <> stderr_s
 
--- | Shut down a server.  It may not be used again.  Calls 'error' if
--- the server process terminates with a failing exit code
--- (i.e. anything but 'ExitSuccess').
+-- | Shut down a server. It may not be used again. Throws 'ServerException' if
+-- the server process terminates with a failing exit code (i.e. anything but
+-- 'ExitSuccess').
 stopServer :: Server -> IO ()
 stopServer s = flip finally (removeFile (serverErrLog s)) $ do
   hClose $ serverStdin s
@@ -195,10 +206,10 @@ stopServer s = flip finally (removeFile (serverErrLog s)) $ do
   case code of
     ExitSuccess -> pure ()
     ExitFailure x -> do
-      stderr_s <- readFile $ serverErrLog s
-      error $
+      stderr_s <- T.readFile $ serverErrLog s
+      throw . ServerException $
         "Server terminated with nonzero exit code "
-          <> show x
+          <> T.pack (show x)
           <> " and stderr:\n"
           <> stderr_s
 
@@ -284,18 +295,18 @@ sendCommand s cmd args = do
       let code_msg =
             case code of
               Just (ExitFailure x) ->
-                "\nServer process exited unexpectedly with exit code: " ++ show x
+                "\nServer process exited unexpectedly with exit code: " <> T.pack (show x)
               Just ExitSuccess -> mempty
               Nothing -> mempty
-      stderr_s <- readFile $ serverErrLog s
-      error $
+      stderr_s <- T.readFile $ serverErrLog s
+      throw . ServerException $
         "After sending command "
-          ++ show cmd
-          ++ " to server process:"
-          ++ show e
-          ++ code_msg
-          ++ "\nServer stderr:\n"
-          ++ stderr_s
+          <> cmd
+          <> " to server process:"
+          <> T.pack (show e)
+          <> code_msg
+          <> "\nServer stderr:\n"
+          <> stderr_s
 
 -- | The name of a server-side variable.
 type VarName = Text

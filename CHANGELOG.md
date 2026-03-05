@@ -7,6 +7,8 @@
 
 * `cmdSetTuningParam` now has a more precise type.
 
+* Server-related exceptions are now reported with the `ServerException` type.
+
 ## 1.2.4.0 -- 2026-02-19
 
 * Report exit code when server terminates with nonzero exit code.
