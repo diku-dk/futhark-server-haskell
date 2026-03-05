@@ -1,6 +1,6 @@
 # Revision history for futhark-server
 
-## 1.3.0.0 -- UNRELEASED
+## 1.3.0.0 -- 2026-03-05
 
 * `Futhark.Server.Values.getValue` now detects attempts to retrieve (some)
   non-opaque values instead of silently producing something invalid.
