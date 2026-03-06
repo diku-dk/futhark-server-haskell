@@ -31,11 +31,12 @@ module Futhark.Server
     -- * Commands
     Cmd,
     CmdFailure (..),
-    Field (..),
+    FieldName,
     VarName,
     TypeName,
     EntryName,
     TuningParamName,
+    Field (..),
     InputType (..),
     OutputType (..),
 
@@ -100,18 +101,12 @@ import qualified System.Process as P
 data ServerException
   = -- | Human-readable error message.
     ServerException T.Text
-  deriving (Show)
+  deriving (Eq, Ord, Show)
 
 instance Exception ServerException
 
 -- | The name of a command.
 type Cmd = Text
-
--- | A record field
-data Field = Field
-  { fieldName :: Text,
-    fieldType :: TypeName
-  }
 
 -- | A handle to a running server.
 data Server = Server
@@ -327,6 +322,16 @@ type EntryName = Text
 -- | The name of a tuning parameter.
 type TuningParamName = Text
 
+-- | The name of a Field.
+type FieldName = Text
+
+-- | A record field
+data Field = Field
+  { fieldName :: FieldName,
+    fieldType :: TypeName
+  }
+  deriving (Eq, Ord, Show)
+
 -- | The type of an input of an entry point.  If 'inputConsumed', then
 -- the value passed in a 'cmdCall' must not be used again (nor any of
 -- its aliases).
@@ -334,6 +339,7 @@ data InputType = InputType
   { inputConsumed :: Bool,
     inputType :: TypeName
   }
+  deriving (Eq, Ord, Show)
 
 -- | The type of an output of an entry point.  If 'outputUnique', then
 -- the value returned does not alias any of the inputs.  See the
@@ -344,6 +350,7 @@ data OutputType = OutputType
   { outputUnique :: Bool,
     outputType :: TypeName
   }
+  deriving (Eq, Ord, Show)
 
 inOutType :: (Bool -> TypeName -> a) -> Text -> a
 inOutType f t =
@@ -427,7 +434,7 @@ cmdEntryPoints s = sendCommand s "entry_points" []
 
 -- | @fields type@
 cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Field])
-cmdFields s t = fmap (zipWith parseField [1..]) <$> sendCommand s "fields" [t]
+cmdFields s t = fmap (zipWith parseField [1 ..]) <$> sendCommand s "fields" [t]
   where
     parseField :: Int -> Text -> Field
     parseField l f =
