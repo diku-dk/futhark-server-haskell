@@ -6,6 +6,8 @@
 
 * Added some convenience instances to `Field`, `InputType`, and `OutputType`.
 
+* Added `cmdKind`, `cmdType`, `cmdElemtype`, `cmdShape`, `cmdIndex`.
+
 ## 1.3.0.0 -- 2026-03-05
 
 * `Futhark.Server.Values.getValue` now detects attempts to retrieve (some)
