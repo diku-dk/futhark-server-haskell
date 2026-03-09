@@ -32,10 +32,13 @@ module Futhark.Server
     Cmd,
     CmdFailure (..),
     FieldName,
+    VariantName,
     VarName,
     TypeName,
     EntryName,
     TuningParamName,
+    Kind (..),
+    Variant (..),
     Field (..),
     InputType (..),
     OutputType (..),
@@ -53,15 +56,24 @@ module Futhark.Server
     -- ** Interrogation
     cmdTypes,
     cmdEntryPoints,
+    cmdKind,
+    cmdType,
+
+    -- * Arrays
+    cmdElemtype,
+    cmdShape,
+    cmdIndex,
 
     -- ** Records
     cmdNew,
     cmdProject,
     cmdFields,
 
-    -- * Arrays
-    cmdShape,
-    cmdIndex,
+    -- ** Sums
+    cmdVariants,
+    cmdConstruct,
+    cmdDestruct,
+    cmdVariant,
 
     -- ** Auxiliary
     cmdReport,
@@ -322,13 +334,31 @@ type EntryName = Text
 -- | The name of a tuning parameter.
 type TuningParamName = Text
 
--- | The name of a Field.
+-- | The name of a field.
 type FieldName = Text
+
+-- | The name of a variant.
+type VariantName = Text
+
+data Kind
+  = Primitive
+  | Array
+  | Record
+  | Sum
+  | Opaque
+  deriving (Eq, Ord, Show)
 
 -- | A record field
 data Field = Field
   { fieldName :: FieldName,
     fieldType :: TypeName
+  }
+  deriving (Eq, Ord, Show)
+
+-- | A sum variant
+data Variant = Variant
+  { variantName :: VariantName,
+    variantTypes :: [TypeName]
   }
   deriving (Eq, Ord, Show)
 
@@ -362,6 +392,12 @@ inOutType f t =
 helpCmd :: Server -> Cmd -> [Text] -> IO (Maybe CmdFailure)
 helpCmd s cmd args =
   either Just (const Nothing) <$> sendCommand s cmd args
+
+sendCommandSL :: Server -> Cmd -> [Text] -> IO (Either CmdFailure Text)
+sendCommandSL s cmd args = fmap expectSingleLine <$> sendCommand s cmd args
+  where
+    expectSingleLine (a : _) = a
+    expectSingleLine [] = error $ "Expected output of command \"" ++ T.unpack (T.intercalate " " $ cmd : args) ++ "\""
 
 -- | @restore filename var0 type0 var1 type1...@.
 cmdRestore :: Server -> FilePath -> [(VarName, TypeName)] -> IO (Maybe CmdFailure)
@@ -432,6 +468,34 @@ cmdTypes s = sendCommand s "types" []
 cmdEntryPoints :: Server -> IO (Either CmdFailure [EntryName])
 cmdEntryPoints s = sendCommand s "entry_points" []
 
+-- | @kind t@
+cmdKind :: Server -> TypeName -> IO (Either CmdFailure Kind)
+cmdKind s t = fmap parseKind <$> sendCommandSL s "kind" [t]
+  where
+    parseKind "primitive" = Primitive
+    parseKind "array" = Array
+    parseKind "record" = Record
+    parseKind "sum" = Sum
+    parseKind "opaque" = Opaque
+    parseKind _ = error $ "Invalid kind of type \"" ++ T.unpack t ++ "\""
+
+-- | @type v@
+cmdType :: Server -> VarName -> IO (Either CmdFailure TypeName)
+cmdType s v = sendCommandSL s "type" [v]
+
+-- | @elemtype t@
+cmdElemtype :: Server -> TypeName -> IO (Either CmdFailure TypeName)
+cmdElemtype s t = sendCommandSL s "elemtype" [t]
+
+-- | @shape v@
+cmdShape :: Server -> VarName -> IO (Either CmdFailure [Int])
+cmdShape s v = fmap (map (read . T.unpack) . T.words) <$> sendCommandSL s "shape" [v]
+
+-- | @index v0 v1 i0 ... iN-1@
+cmdIndex :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)
+cmdIndex s v0 v1 is =
+  helpCmd s "index" $ [v0, v1] <> map (T.pack . show) is
+
 -- | @fields type@
 cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Field])
 cmdFields s t = fmap (zipWith parseField [1 ..]) <$> sendCommand s "fields" [t]
@@ -450,14 +514,34 @@ cmdNew s var0 t vars = helpCmd s "new" $ var0 : t : vars
 cmdProject :: Server -> VarName -> VarName -> Text -> IO (Maybe CmdFailure)
 cmdProject s to from field = helpCmd s "project" [to, from, field]
 
--- | @shape v@
-cmdShape :: Server -> VarName -> IO (Either CmdFailure [Int])
-cmdShape s v = fmap (map (read . T.unpack)) <$> sendCommand s "shape" [v]
+-- | @variants t@
+cmdVariants :: Server -> TypeName -> IO (Either CmdFailure [Variant])
+cmdVariants s t = fmap parseVariants <$> sendCommand s "variants" [t]
+  where
+    parseVariants :: [Text] -> [Variant]
+    parseVariants = map mkVariant . go []
+      where
+        go acc [] = [reverse acc]
+        go [] (l : ls) = go [l] ls
+        go acc (l : ls)
+          | "- " `T.isPrefixOf` l = go (T.drop 2 l : acc) ls
+          | otherwise             = reverse acc : go [l] ls
 
--- | @index v0 v1 i0 ... iN-1@
-cmdIndex :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)
-cmdIndex s v0 v1 is =
-  helpCmd s "index" $ [v0, v1] <> map (T.pack . show) is
+    mkVariant :: [Text] -> Variant
+    mkVariant (n : ts) = Variant n ts
+    mkVariant [] = error $ "Invalid output of \"variants " ++ T.unpack t ++ "\""
+
+-- | @construct var0 type variant var1...@
+cmdConstruct :: Server -> VarName -> TypeName -> VariantName -> [VarName] -> IO (Maybe CmdFailure)
+cmdConstruct s var0 t variant vars = helpCmd s "construct" $ var0 : t : variant : vars
+
+-- | @destruct var0 var1...@
+cmdDestruct :: Server -> VarName -> [VarName] -> IO (Maybe CmdFailure)
+cmdDestruct s var0 vars = helpCmd s "destruct" $ var0 : vars
+
+-- | @variant v@
+cmdVariant :: Server -> VarName -> IO (Either CmdFailure VariantName)
+cmdVariant s v = sendCommandSL s "variant" [v]
 
 -- | Turn a 'Maybe'-producing command into a monadic action.
 cmdMaybe :: (MonadError Text m, MonadIO m) => IO (Maybe CmdFailure) -> m ()
