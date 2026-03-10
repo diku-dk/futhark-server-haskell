@@ -1,6 +1,6 @@
 # Revision history for futhark-server
 
-## Unreleased
+## 1.3.1.0 -- 2026-03-10
 
 * Added `FieldName`.
 
