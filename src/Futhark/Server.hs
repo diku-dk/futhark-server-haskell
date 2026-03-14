@@ -85,6 +85,7 @@ module Futhark.Server
     cmdSetTuningParam,
     cmdTuningParams,
     cmdTuningParamClass,
+    cmdAttributes,
 
     -- * Utility
     cmdMaybe,
@@ -463,6 +464,10 @@ cmdTuningParams s entry = sendCommand s "tuning_params" [entry]
 cmdTuningParamClass :: Server -> TuningParamName -> IO (Either CmdFailure Text)
 cmdTuningParamClass s param = fmap mconcat <$> sendCommand s "tuning_param_class" [param]
 
+-- | @attributes entry_point@
+cmdAttributes :: Server -> EntryName -> IO (Either CmdFailure [Text])
+cmdAttributes s entry = sendCommand s "attributes" [entry]
+
 -- | @types@
 cmdTypes :: Server -> IO (Either CmdFailure [TypeName])
 cmdTypes s = sendCommand s "types" []
@@ -541,7 +546,7 @@ cmdVariants s t = fmap parseVariants <$> sendCommand s "variants" [t]
         go [] (l : ls) = go [l] ls
         go acc (l : ls)
           | "- " `T.isPrefixOf` l = go (T.drop 2 l : acc) ls
-          | otherwise             = reverse acc : go [l] ls
+          | otherwise = reverse acc : go [l] ls
 
     mkVariant :: [Text] -> Variant
     mkVariant (n : ts) = Variant n ts

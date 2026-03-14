@@ -1,10 +1,12 @@
 # Revision history for futhark-server
 
-## Unreleased
+## 1.3.1.0 -- 2026-03-10
 
 * Added `FieldName`.
 
 * Added some convenience instances to `Field`, `InputType`, and `OutputType`.
+
+* Added `cmdKind`, `cmdType`, `cmdElemtype`, `cmdShape`, `cmdIndex`, `cmdAttributes`.
 
 ## 1.3.0.0 -- 2026-03-05
 
