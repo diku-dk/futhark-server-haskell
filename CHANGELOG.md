@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.3.2.0 -- 2026-03-15
+
+* Added `cmdNewArray`, `cmdRank`, `cmdSet`.
+
 ## 1.3.1.0 -- 2026-03-10
 
 * Added `FieldName`.
