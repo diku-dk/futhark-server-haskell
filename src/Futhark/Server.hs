@@ -60,8 +60,11 @@ module Futhark.Server
     cmdType,
 
     -- * Arrays
+    cmdNewArray,
+    cmdRank,
     cmdElemtype,
     cmdShape,
+    cmdSet,
     cmdIndex,
 
     -- ** Records
@@ -488,6 +491,14 @@ cmdKind s t = fmap parseKind <$> sendCommandSL s "kind" [t]
 cmdType :: Server -> VarName -> IO (Either CmdFailure TypeName)
 cmdType s v = sendCommandSL s "type" [v]
 
+-- | @new_array v0 t s0 ... sN-1 v1 ... vM@
+cmdNewArray :: Server -> VarName -> TypeName -> [Int] -> [VarName] -> IO (Maybe CmdFailure)
+cmdNewArray s var0 t sizes vars = helpCmd s "new_array" $ var0 : t : map T.show sizes ++ vars
+
+-- | @rank t@
+cmdRank :: Server -> TypeName -> IO (Either CmdFailure Int)
+cmdRank s t = fmap (read . T.unpack) <$> sendCommandSL s "rank" [t]
+
 -- | @elemtype t@
 cmdElemtype :: Server -> TypeName -> IO (Either CmdFailure TypeName)
 cmdElemtype s t = sendCommandSL s "elemtype" [t]
@@ -496,10 +507,15 @@ cmdElemtype s t = sendCommandSL s "elemtype" [t]
 cmdShape :: Server -> VarName -> IO (Either CmdFailure [Int])
 cmdShape s v = fmap (map (read . T.unpack) . T.words) <$> sendCommandSL s "shape" [v]
 
+-- | @set v0 v1 i0 ... iN-1@
+cmdSet :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)
+cmdSet s v0 v1 is =
+  helpCmd s "set" $ [v0, v1] <> map T.show is
+
 -- | @index v0 v1 i0 ... iN-1@
 cmdIndex :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)
 cmdIndex s v0 v1 is =
-  helpCmd s "index" $ [v0, v1] <> map (T.pack . show) is
+  helpCmd s "index" $ [v0, v1] <> map T.show is
 
 -- | @fields type@
 cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Field])
