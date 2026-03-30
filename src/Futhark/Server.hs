@@ -117,9 +117,12 @@ import qualified System.Process as P
 data ServerException
   = -- | Human-readable error message.
     ServerException T.Text
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
 instance Exception ServerException
+
+instance Show ServerException where
+  show (ServerException s) = T.unpack s
 
 -- | The name of a command.
 type Cmd = Text
