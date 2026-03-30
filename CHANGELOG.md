@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.3.3.0 -- 2026-03-30
+
+* Better `Show` instance for `ServerException`.
+
 ## 1.3.2.0 -- 2026-03-15
 
 * Added `cmdNewArray`, `cmdRank`, `cmdSet`.
