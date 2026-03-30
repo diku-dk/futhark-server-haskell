@@ -169,7 +169,7 @@ newServerCfg prog opts =
 -- | Start up a server. Make sure that 'stopServer' is eventually called on the
 -- server. If this does not happen, then temporary files may be left on the file
 -- system. You almost certainly wish to use 'bracket' or similar to avoid this.
--- Throws 'ServerException' if startup fails.
+-- Throws t'ServerException' if startup fails.
 startServer :: ServerCfg -> IO Server
 startServer (ServerCfg prog options debug on_line_f) = do
   tmpdir <- getCanonicalTemporaryDirectory
@@ -217,7 +217,7 @@ startServer (ServerCfg prog options debug on_line_f) = do
           <> "\nStderr:\n"
           <> stderr_s
 
--- | Shut down a server. It may not be used again. Throws 'ServerException' if
+-- | Shut down a server. It may not be used again. Throws t'ServerException' if
 -- the server process terminates with a failing exit code (i.e. anything but
 -- 'ExitSuccess').
 stopServer :: Server -> IO ()
@@ -347,6 +347,8 @@ type FieldName = Text
 -- | The name of a variant.
 type VariantName = Text
 
+-- | The kind of a type. Note that this is the protocol-level notion, which
+-- differs slightly from the manifest notion.
 data Kind
   = Primitive
   | Array
