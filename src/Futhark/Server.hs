@@ -50,7 +50,7 @@ module Futhark.Server
     cmdFree,
     cmdRename,
     cmdInputs,
-    cmdOutputs,
+    cmdOutput,
     cmdClear,
 
     -- ** Interrogation
@@ -419,9 +419,9 @@ cmdStore :: Server -> FilePath -> [VarName] -> IO (Maybe CmdFailure)
 cmdStore s fname vars = helpCmd s "store" $ T.pack fname : vars
 
 -- | @call entrypoint outs... ins...@.
-cmdCall :: Server -> EntryName -> [VarName] -> [VarName] -> IO (Either CmdFailure [Text])
-cmdCall s entry outs ins =
-  sendCommand s "call" $ entry : outs ++ ins
+cmdCall :: Server -> EntryName -> VarName -> [VarName] -> IO (Either CmdFailure [Text])
+cmdCall s entry out ins =
+  sendCommand s "call" $ entry : out : ins
 
 -- | @free vars...@.
 cmdFree :: Server -> [VarName] -> IO (Maybe CmdFailure)
@@ -436,10 +436,10 @@ cmdInputs :: Server -> EntryName -> IO (Either CmdFailure [InputType])
 cmdInputs s entry =
   fmap (map (inOutType InputType)) <$> sendCommand s "inputs" [entry]
 
--- | @outputs entryname@, with uniqueness represented as True.
-cmdOutputs :: Server -> EntryName -> IO (Either CmdFailure [OutputType])
-cmdOutputs s entry =
-  fmap (map (inOutType OutputType)) <$> sendCommand s "outputs" [entry]
+-- | @output entryname@, with uniqueness represented as True.
+cmdOutput :: Server -> EntryName -> IO (Either CmdFailure OutputType)
+cmdOutput s entry =
+  fmap (inOutType OutputType) <$> sendCommandSL s "output" [entry]
 
 -- | @clear@
 cmdClear :: Server -> IO (Maybe CmdFailure)

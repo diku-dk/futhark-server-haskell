@@ -1,5 +1,11 @@
 # Revision history for futhark-server
 
+## 1.4.0.0 -- 2026-04-29
+
+* Replaced `cmdOutputs` with `cmdOutput`.
+
+* `cmdCall` now accepts only a single variable for the output.
+
 ## 1.3.3.0 -- 2026-03-30
 
 * Better `Show` instance for `ServerException`.
