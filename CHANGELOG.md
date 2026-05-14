@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.4.1.0 -- 2026-05-14
+
+* Added `cmdZip` and `cmdUnzip`.
+
 ## 1.4.0.0 -- 2026-04-29
 
 * Replaced `cmdOutputs` with `cmdOutput`.

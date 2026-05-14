@@ -66,6 +66,8 @@ module Futhark.Server
     cmdShape,
     cmdSet,
     cmdIndex,
+    cmdZip,
+    cmdUnzip,
 
     -- ** Records
     cmdNew,
@@ -521,6 +523,16 @@ cmdSet s v0 v1 is =
 cmdIndex :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)
 cmdIndex s v0 v1 is =
   helpCmd s "index" $ [v0, v1] <> map T.show is
+
+-- | @zip v0 t v1 ... vN@
+cmdZip :: Server -> VarName -> TypeName -> [VarName] -> IO (Maybe CmdFailure)
+cmdZip s v0 t vs = do
+  helpCmd s "zip" $ v0 : t : vs
+
+-- | @unzip v0 v1 ... vN@
+cmdUnzip :: Server -> VarName -> [VarName] -> IO (Maybe CmdFailure)
+cmdUnzip s v0 vs = do
+  helpCmd s "unzip" $ v0 : vs
 
 -- | @fields type@
 cmdFields :: Server -> TypeName -> IO (Either CmdFailure [Field])
