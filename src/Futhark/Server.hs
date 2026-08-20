@@ -512,7 +512,7 @@ cmdElemtype s t = sendCommandSL s "elemtype" [t]
 
 -- | @shape v@
 cmdShape :: Server -> VarName -> IO (Either CmdFailure [Int])
-cmdShape s v = fmap (map (read . T.unpack) . T.words) <$> sendCommandSL s "shape" [v]
+cmdShape s v = fmap (map (read . T.unpack) . foldMap T.words) <$> sendCommand s "shape" [v]
 
 -- | @set v0 v1 i0 ... iN-1@
 cmdSet :: Server -> VarName -> VarName -> [Int] -> IO (Maybe CmdFailure)

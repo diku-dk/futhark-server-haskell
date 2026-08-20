@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.4.1.1 -- 2026-08-20
+
+* Fixed bug in `cmdShape` which would read only first line from the server.
+
 ## 1.4.1.0 -- 2026-05-14
 
 * Added `cmdZip` and `cmdUnzip`.
