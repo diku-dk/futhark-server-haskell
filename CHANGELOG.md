@@ -1,5 +1,9 @@
 # Revision history for futhark-server
 
+## 1.5.0.0 -- 2026-09-08
+
+* `outputUnique` is now `outputFresh`.
+
 ## 1.4.1.1 -- 2026-08-20
 
 * Fixed bug in `cmdShape` which would read only first line from the server.

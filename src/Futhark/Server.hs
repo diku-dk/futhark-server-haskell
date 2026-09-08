@@ -373,22 +373,21 @@ data Variant = Variant
   }
   deriving (Eq, Ord, Show)
 
--- | The type of an input of an entry point.  If 'inputConsumed', then
--- the value passed in a 'cmdCall' must not be used again (nor any of
--- its aliases).
+-- | The type of an input of an entry point. If 'inputConsumed', then the value
+-- passed in a 'cmdCall' must not be used again (nor any of its aliases).
 data InputType = InputType
   { inputConsumed :: Bool,
     inputType :: TypeName
   }
   deriving (Eq, Ord, Show)
 
--- | The type of an output of an entry point.  If 'outputUnique', then
--- the value returned does not alias any of the inputs.  See the
--- Futhark language manual itself for more details - the implications
--- are quite subtle (but you can ignore them unless you manually use
--- type annotations to make some entry point parameters unique).
+-- | The type of an output of an entry point. If 'outputFresh', then the value
+-- returned does not alias any of the inputs. See the Futhark language manual
+-- itself for more details - the implications are quite subtle (but you can
+-- ignore them unless you manually use type annotations to make some entry point
+-- parameters unique).
 data OutputType = OutputType
-  { outputUnique :: Bool,
+  { outputFresh :: Bool,
     outputType :: TypeName
   }
   deriving (Eq, Ord, Show)
